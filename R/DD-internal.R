@@ -140,3 +140,55 @@ create_lag <- function(vec, n.lag){
   
 }
 
+prediction_rlmDD <- function (yy, xx, model){
+  Y <- as.matrix(yy_test)
+  n <- length(Y)
+  z <- c()
+  nlag <- sum(grepl("^lag",as.character(row.names(model$coefficients)), ignore.case=TRUE))
+  esti <- model$varpara$gamma
+  phi <- model$varpara$phi
+  B_est <- model_1$coefficients
+  switch(model$varpara$var_func, power = {
+    est <- function(x) {
+      sum(chi((Y - mu)/(phi * abs(mu)^x)) * log(abs(mu)))
+    }
+    est_lag <- function(x) {
+      sum(chi((Y[-c(1:nlag)] - mu)/(phi * abs(mu)^x)) * 
+            log(abs(mu)))
+    }
+    var.func <- function(mu, esti, phi) {
+      phi * abs(mu)^esti
+    }
+  }, exponential = {
+    est <- function(x) {
+      sum(chi((Y - mu)/(phi * exp(x * abs(mu)))) * abs(mu))
+    }
+    est_lag <- function(x) {
+      sum(chi((Y[-c(1:nlag)] - mu)/(phi * exp(x * abs(mu)))) * 
+            abs(mu))
+    }
+    var.func <- function(mu, esti, phi) {
+      phi * exp(esti * abs(mu))
+    }
+  }, stop("Wrong function name"))
+  
+  mu <- xx_test %*% B_est[1:3,]
+  pearson_res <- (Y - mu)/(var.func(mu, esti, phi))
+  
+  list.l <- create_lag(pearson_res, n.lag = nlag)
+  for (a in 1:nlag) assign(paste0("lag", a), list.l[[a]])
+  dat.l <- as.data.frame(list.l) * (var.func(mu, esti, phi))
+  dat.ln <- matrix(c(rep(1, nlag)), ncol = 1)
+  row.names(dat.ln) <- names(dat.l)
+  
+  X <- as.matrix(cbind(xx_test, dat.l))
+  
+  mu <- X[-c(1:nlag), ] %*% B_est
+  
+  pearson_res <- (Y[-c(1:nlag)] - mu)/(var.func(mu, esti, 
+                                                phi))
+  
+  z$residuals <- (Y[-c(1:nlag)] - mu)
+  z$fitted.values <- mu
+  return(z)
+}
