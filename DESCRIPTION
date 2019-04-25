@@ -1,7 +1,7 @@
 Package: rlmDataDriven
 Type: Package
 Title: Robust Regression with Data Driven Tuning Parameter
-Version: 0.2.0
+Version: 0.3.0
 Author: You-Gan Wang
 Maintainer: The package maintainer <you-gan.wang@qut.edu.au>
 Imports: stats, MASS, tseries
